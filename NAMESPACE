@@ -1,0 +1,9 @@
+exportPattern("^[[:alpha:]]+")
+
+# Import all packages listed as Imports or Depends
+import(GA, psych)
+
+# Register S3 methods
+S3method("print", "GAabbreviate")
+S3method("summary", "GAabbreviate")
+S3method("plot", "GAabbreviate")
