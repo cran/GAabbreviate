@@ -120,8 +120,9 @@ GAabbreviate <- function(items = NULL, scales = NULL,
                popSize = obj$settings$popSize,
                maxiter = obj$settings$maxiter, 
                keepBest = TRUE,
-               monitor = function(...)
-                         monitor.GAabbreviate(..., plot = plot),
+               monitor = if(verbose) 
+                           function(...) monitor.GAabbreviate(..., plot = plot)
+                         else NULL,
                ...)
 
   # get intermediate results saved at each iteration

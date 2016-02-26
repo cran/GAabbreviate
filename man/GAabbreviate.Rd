@@ -1,9 +1,9 @@
 \name{GAabbreviate}
 \alias{GAabbreviate}
 
-\title{Abbreviating questionnaires (or other measures) using Genetic Algorithms (GAs)}
+\title{Abbreviating items (from questionnaire or other) measures using Genetic Algorithms (GAs)}
 
-\description{The GAabbreviate uses Genetic Algorithms as an optimization tool to create abbreviated forms of lengthy questionnaires (or other measures) that maximally capture the variance in the original data of the long form.
+\description{The GAabbreviate uses Genetic Algorithms as an optimization tool for scale abbreviation or subset selection that maximally captures the variance in the original data.
 }
 
 \usage{
@@ -23,7 +23,7 @@ GAabbreviate(items = NULL,
              sWeights = NULL, 
              nSample = NULL)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
   \item{items}{A matrix of subjects x item scores.}
   \item{scales}{A matrix of subjects x scale scores.}
@@ -63,17 +63,21 @@ An object of class \code{'GAabbreviate'} providing the following information:
 \item{GA}{An object of class \code{'GA'}.}
 \item{measure}{A list of measure values.}
 }
+
 \references{
-Sahdra, B. K., Ciarrochi, J., Parker, P., & Scrucca, L. (2015). The 30-Item Multidimensional Experiential Avoidance Questionnaire: Mapping Experiential Avoidance in America. Manuscript under review.
+Sahdra B. K., Ciarrochi J., Parker P. and Scrucca L. (2016). Using genetic algorithms in a large nationally representative American sample to abbreviate the Multidimensional Experiential Avoidance Questionnaire. \emph{Frontiers in Psychology}, Volume 7(189), pp. 1--14. \url{ http://www.frontiersin.org/quantitative_psychology_and_measurement/10.3389/fpsyg.2016.00189/abstract}
 
-Scrucca, L. (2012). GA: a package for genetic algorithms in R. Journal of Statistical Software, 53, 1-37. 
+Scrucca, L. (2013). GA: a package for genetic algorithms in R. \emph{Journal of Statistical Software}, 53, 1-37. 
 
-Yarkoni, T. (2010). The abbreviation of personality, or how to measure 200 personality scales with 200 items. Journal of Research in Personality, 44(2), 180-198. 
+Yarkoni, T. (2010). The abbreviation of personality, or how to measure 200 personality scales with 200 items. \emph{Journal of Research in Personality}, 44(2), 180-198. 
 }
-\author{
-Luca Scrucca, Department of Economics, University of Perugia, Perugia, ITALY
 
-Baljinder K. Sahdra, Institute for Positive Psychology and Education, Australian Catholic University, Strathfield, NSW, AUSTRALIA
+\author{
+Luca Scrucca,
+Department of Economics, University of Perugia, Perugia, ITALY
+
+Baljinder K. Sahdra,
+Institute for Positive Psychology and Education, Australian Catholic University, Strathfield, NSW, AUSTRALIA
 
 Send inquiries to \email{baljinder.sahdra@acu.edu.au}.
 }

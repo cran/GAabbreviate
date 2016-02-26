@@ -1,0 +1,20 @@
+citHeader("To cite package 'GAabbreviate' in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Using genetic algorithms in a large nationally representative American sample to abbreviate the {M}ultidimensional {E}xperiential {A}voidance {Q}uestionnaire",
+  author       = personList(as.person("Sahdra, B. K."),
+                            as.person("Ciarrochi, J."),
+                            as.person("Parker, P."),
+                            as.person("Scrucca, L.")),
+  journal      = "Frontiers in Psychology",
+  year         = "2016",
+  volume       = "7",
+  number       = "189",
+  pages        = "1--14",
+  url          = "http://www.frontiersin.org/quantitative_psychology_and_measurement/10.3389/fpsyg.2016.00189/abstract",
+
+  textVersion  =
+  paste("Sahdra B. K., Ciarrochi J., Parker P. and Scrucca L. (2016).",
+        "Using genetic algorithms in a large nationally representative American sample to abbreviate the Multidimensional Experiential Avoidance Questionnaire.",
+        "Frontiers in Psychology, Vol. 7(189), pp. 1--14.")
+)
