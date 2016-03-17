@@ -4,6 +4,7 @@
 \alias{convCorr.GAabbreviate}
 \alias{fitness.GAabbreviate}
 \alias{GAabbreviation-package}
+\alias{is.missing}
 \alias{impute}
 \alias{makeKey.GAabbreviate}
 \alias{measure.GAabbreviate}

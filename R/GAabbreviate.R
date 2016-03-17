@@ -3,7 +3,7 @@
 # Abbreviating items (from questionnaire or other) measures 
 # using genetic algorithms (GAs)
 #
-# version 0.1 23/4/2014
+# version 1.1 Feb 2016
 #
 # Luca Scrucca
 # University of Perugia, Italy
@@ -11,11 +11,12 @@
 #
 # ---------------------------------------------------------------------------
 #
-# Conversion of gaabbreviate.R v 0.11 (2/10/2011) from 
-# Tal Yarkoni <tyarkoni@gmail.com>
+# Based on the code gaabbreviate.R v 0.11 (2/10/2011) of Tal Yarkoni 
+# <tyarkoni@gmail.com>
 # http://www.shortermeasures.com/
 # http://www.talyarkoni.org/blog/2010/03/31/abbreviating-personality-measures-in-r-a-tutorial/
 #
+# ---------------------------------------------------------------------------
 
 GAabbreviate <- function(items = NULL, scales = NULL, 
                          itemCost = 0.05, maxItems = 5, 
@@ -26,116 +27,115 @@ GAabbreviate <- function(items = NULL, scales = NULL,
                          sWeights = NULL, nSample = NULL) 
 {
   
-  if(class(items) == "GAabbreviate")
-    { obj <- items
-      # collect all the data TO BE DONE
-  }
-  else
-    { if(is.null(items) & is.null(scales)) 
-        stop("Invalid input provided! Either the items and scales, or a 'GAabbreviate' object  arguments must be provided.")
+  if(is.null(items) & is.null(scales)) 
+    stop("Invalid input provided! Either the items and scales, or a 'GAabbreviate' object  arguments must be provided.")
 
-      if(!is.numeric(maxItems) || length(maxItems) > 1 || maxItems < 1) 
-        stop("maxItems must be a positive integer!")
+  if(!is.numeric(maxItems) || length(maxItems) > 1 || maxItems < 1) 
+    stop("maxItems must be a positive integer!")
       
-      items <- data.matrix(items)
-      scales <- data.matrix(scales)
-      nSubjects <- nrow(items)
-      nItems <- ncol(items)
-      nScales <- ncol(scales)
-      if(nSubjects != nrow(scales)) 
-        stop("Number of subjects in item and scale matrices do not match!")
-    
-      # Equal weighting of scales by default
-      if(is.null(sWeights)) sWeights <- rep(1, nScales)
-      if(length(sWeights) != nScales) 
-        stop("Length of scale weights vector must match the number of scales!")
+  items <- data.matrix(items)
+  scales <- data.matrix(scales)
+  nSubjects <- nrow(items)
+  nItems <- ncol(items)
+  nScales <- ncol(scales)
+  if(nSubjects != nrow(scales)) 
+    stop("Number of subjects in item and scale matrices do not match!")
   
-      # Can sample only a subset of observations
-      if(!is.null(nSample) && is.numeric(nSample) && nSample > 0) 
-        { if(verbose)
-             message(paste("Using", nSample, "of", nSubjects, 
-                           "subjects to generate measure..."))
-          samp <- sample(nSubjects, nSample, replace = FALSE)  
-          nSubjects <- nSample
-          items <- items[samp,,drop=FALSE]
-          scales <- scales[samp,,drop=FALSE]
-      }
-    
-      # If cross-validation is TRUE, randomly split sample in two halves
-      trainSubjects <- 1:nSubjects
-      if(crossVal) 
-        { ntrain <- round(nSubjects/2)
-          trainSubjects <- sample(1:nSubjects, ntrain)
-      }
-      crossvalSubjects <- setdiff(seq(nSubjects), trainSubjects)
-
-      # Impute mean for NAs
-      if(impute) 
-        { items <- impute(items)
-          scales <- impute(scales)
-      }
-        
-      # Create new 'GAabbreviate' object if none given
-      obj <- list(data = list(items = items,
-                              scales = scales,
-                              nItems = nItems,
-                              nScales = nScales,
-                              trainSubjects = trainSubjects,
-                              crossvalSubjects = crossvalSubjects),
-                  settings = list(maxiter = maxiter,
-                                  itemCost = itemCost,
-                                  maxItems = maxItems,
-                                  minR = minR,
-                                  popSize = popSize,
-                                  crossVal = crossVal,
-                                  impute = impute,
-                                  pairwise = pairwise,
-                                  sWeights = sWeights,
-                                  verbose = verbose),
-                  results = list(#best = NULL,     # total cost of single best so far
-                                 solution = NULL, # the solution
-                                 nItems = NULL,  # number of items in measure
-                                 cost = NULL,     # total cost of measure
-                                 meanR2 = NULL  # mean R^2 of measure
-                  ),        
-                  # properties of the single best measure so far.
-                  # mainly used for display purposes in monitoring function.
-                  best = list(cost = Inf, 
-                              fit = NULL),    # R^2s for all scales
-                  GA = NULL,
-                  measure = NULL
-      )
-      class(obj) <- "GAabbreviate"
+  # Equal weighting of scales by default
+  if(is.null(sWeights)) sWeights <- rep(1, nScales)
+  if(length(sWeights) != nScales) 
+    stop("Length of scale weights vector must match the number of scales!")
+  
+  # Can sample only a subset of observations
+  if(!is.null(nSample) && is.numeric(nSample) && nSample > 0) 
+    { if(verbose)
+         message(paste("Using", nSample, "of", nSubjects, 
+                       "subjects to generate measure..."))
+         samp <- sample(nSubjects, nSample, replace = FALSE)  
+         nSubjects <- nSample
+         items <- items[samp,,drop=FALSE]
+         scales <- scales[samp,,drop=FALSE]
   }
-  env <- asNamespace("GAabbreviate")
-  assign(".gaAbbreviate", obj, envir = env)
+    
+  # If cross-validation is TRUE, randomly split sample in two halves
+  trainSubjects <- 1:nSubjects
+  if(crossVal) 
+    { ntrain <- round(nSubjects/2)
+      trainSubjects <- sample(1:nSubjects, ntrain)
+  }
+  crossvalSubjects <- setdiff(seq(nSubjects), trainSubjects)
+
+  # Check for missing values 
+  impute <- as.logical(impute)
+  if(any(is.missing(items)) || any(is.missing(scales)))
+    { if(!impute)
+        { message("There seem to be missing values in either 'items' or 'scales' matrix. Please ensure you impute missing values in items and create scale scores using a method most appropriate for these data before running GAabbreviate(). Note that using 'impute = TRUE' argument in GAabbreviate() would use mean imputation, which may or may not be appropriate for these data.")
+          return() }
+      # Impute the mean for missing values
+      if(any(is.missing(items)))  items <- impute(items)
+      if(any(is.missing(scales))) scales <- impute(scales)
+  }
+        
+  # Create new 'GAabbreviate' object if none given
+  obj <- list(data = list(items = items,
+                          scales = scales,
+                          nItems = nItems,
+                          nScales = nScales,
+                          trainSubjects = trainSubjects,
+                          crossvalSubjects = crossvalSubjects),
+              settings = list(maxiter = maxiter,
+                              itemCost = itemCost,
+                              maxItems = maxItems,
+                              minR = minR,
+                              popSize = popSize,
+                              crossVal = crossVal,
+                              impute = impute,
+                              pairwise = pairwise,
+                              sWeights = sWeights,
+                              verbose = verbose),
+              results = list(solution = NULL, # the solution
+                             nItems = NULL,   # number of items in measure
+                             cost = NULL,     # total cost of measure
+                             meanR2 = NULL    # mean R^2 of measure
+                            ),        
+              # properties of the single best measure so far.
+              # mainly used for display purposes in monitoring function.
+              best = list(cost = Inf, 
+                          fit = NULL),    # R^2s for all scales
+              GA = NULL,
+              measure = NULL
+  )
+  class(obj) <- "GAabbreviate"
+
+  # env <- asNamespace("GAabbreviate")
+  env <- globalenv()
+  # env <- parent.frame()
+  assign("TMPGAabbreviateObject", obj, envir = env)
   
   # Run GA and store in gaa
-  if(verbose)
+  if(verbose & interactive())
     cat("Starting GA run...\n")
-  
+
   obj$GA <- ga(type = "binary", 
                fitness = fitness.GAabbreviate, 
                nBits = obj$data$nItems, 
                popSize = obj$settings$popSize,
                maxiter = obj$settings$maxiter, 
                keepBest = TRUE,
-               monitor = if(verbose) 
-                           function(...) monitor.GAabbreviate(..., plot = plot)
-                         else NULL,
+               monitor = function(...) 
+                         monitor.GAabbreviate(..., 
+                                              verbose = verbose, 
+                                              plot = plot),
                ...)
 
   # get intermediate results saved at each iteration
-  obj$results <- get(".gaAbbreviate", envir = env)$results
-  obj$best <- get(".gaAbbreviate", envir = env)$best
+  obj$results <- get("TMPGAabbreviateObject", envir = env)$results
+  obj$best <- get("TMPGAabbreviateObject", envir = env)$best
   # generate measures
   obj$measure <- measure.GAabbreviate(obj)
 
-  # Write file
-#  if (!is.null(writeFile)) gaa.writeMeasure(gaa, writeFile)
-  
   # remove object from global environment
-  assign(".gaAbbreviate", NULL, envir = env)
+  assign("TMPGAabbreviateObject", NULL, envir = env)
   # and return the object from function call 
   return(obj)
 }
@@ -143,9 +143,11 @@ GAabbreviate <- function(items = NULL, scales = NULL,
 # Fitness function
 fitness.GAabbreviate <- function(x) 
 {
-  # get values from object stored in globalenv()
-  env <- asNamespace("GAabbreviate")
-  obj <- get(".gaAbbreviate", envir = env)
+  # get values from object stored in package's environment
+  # env <- asNamespace("GAabbreviate")
+  env <- globalenv()
+  # env <- parent.frame()
+  obj <- get("TMPGAabbreviateObject", envir = env)
   items <- obj$data$items
   scales <- obj$data$scales
   nScales <- obj$data$nScales
@@ -183,24 +185,32 @@ fitness.GAabbreviate <- function(x)
   attr(totalCost, "itemCost") <- totalItemCost
   attr(totalCost, "varCosts") <- varCosts
   
-  # we want to minimize fitness, but GA maximize it, so returns negative total cost
+  # we want to minimize fitness, but GA maximize it, 
+  # so returns negative total cost
   return(-totalCost)
 }
 
 # Monitoring function
 
-monitor.GAabbreviate <- function(object, digits = getOption("digits"), plot = FALSE, ...)
+monitor.GAabbreviate <- function(object, verbose = TRUE, plot = FALSE, 
+                                 digits = getOption("digits"), ...)
 {
   fitness <- -1*na.exclude(object@fitness)
   iter <- object@iter 
-  cat(paste("Iter =", iter, 
-            " | Mean =", format(mean(fitness), digits = digits), 
-            " | Best =", format(min(fitness), digits = digits),  "\n"))
+  
+  if(verbose & interactive())
+    { cat(paste("Iter =", iter, 
+                " | Mean =", format(mean(fitness), digits = digits), 
+                " | Best =", format(min(fitness), digits = digits),  "\n")) 
+  }
   
   # get results at current iteration 
-  env <- asNamespace("GAabbreviate")
-  gaa <- get(".gaAbbreviate", envir = env)
-  gaa$results$solution <- rbind(gaa$results$solution, object@bestSol[[iter]][1,])
+  # env <- asNamespace("GAabbreviate")
+  env <- globalenv()
+  # env <- parent.frame()
+  gaa <- get("TMPGAabbreviateObject", envir = env)
+  gaa$results$solution <- rbind(gaa$results$solution, 
+                                object@bestSol[[iter]][1,])
   nItems <- sum(object@bestSol[[iter]][1,])
   gaa$results$nItems <- c(gaa$results$nItems, nItems)  
   gaa$results$cost <- c(gaa$results$cost, min(fitness))
@@ -210,10 +220,12 @@ monitor.GAabbreviate <- function(object, digits = getOption("digits"), plot = FA
   meanR2 <- 1 - (gaa$best$cost - nItems*gaa$settings$itemCost)/sum(gaa$settings$sWeights)
   gaa$results$meanR2 <- c(gaa$results$meanR2, meanR2)
 
-  # record results at current iteration 
-  assign(".gaAbbreviate", gaa, envir = env)
-  #  
   if(plot) plot.GAabbreviate(gaa)
+
+  # record results at current iteration 
+  assign("TMPGAabbreviateObject", gaa, envir = env)
+  # 
+  invisible(gaa)
 }
 
 # Creates scoring key, generates measure statistics, etc.
@@ -273,9 +285,13 @@ alphas.GAabbreviate <- function(obj)
           { if(obj$settings$verbose)
               warning("No validation subjects found. Computing coefficient alphas on training subjects instead. This means the estimates may be biased!")
             obj$data$trainSubjects
-          }  
+          }
+  oldwarn <- getOption("warn") # this is needed to avoid a warning
+  options(warn = -1)           # not related to computing alphas
   scores <- scoreItems(keys = obj$measure$key, 
-                       items = obj$data$items[subs,obj$measure$items])
+                       items = obj$data$items[subs,obj$measure$items,drop=FALSE])
+  options(warn = oldwarn)
+
   return(scores$alpha)
 }
 
@@ -340,8 +356,7 @@ summary.GAabbreviate <- function(object, digits = getOption("digits"), verbose =
   }
 }
 
-# Plot (a) cost, (b) no. of items, and (c) mean R^2 (across scales) 
-# for the best solution after each iteration.
+# Plot method 
 plot.GAabbreviate <- function(x, ...) 
 {
   object <- x  # Argh.  Really want to use 'object' anyway
@@ -352,75 +367,81 @@ plot.GAabbreviate <- function(x, ...)
   # layout.show(5)
   par(mgp = c(2,0.7,0), plt = c(0.1,0.85,0.2,0.85), 
       mar = c(3,3,2,.5)+0.1)
+  
   # Plot line graph of total cost
   iter <- length(object$results$cost)
-  plot(seq(iter), object$results$cost, type="o", 
+  plot(seq(iter), object$results$cost, type="o",
        col = "red3", cex = 0.5, xaxt = "n",
        ylim = extendrange(object$results$cost, f = 0.05),
        xlab = "GA generation", ylab = "Minimum cost",
        main = "Total cost", panel.first = grid())
-  axis(side = 1, 
-       at = {at <- pretty(seq(iter), n = 5, high.u.bias = 2); at[at==0] <- 1; at})  
+  axis(side = 1, at = { at <- pretty(seq(iter), n = 5, high.u.bias = 2)
+                        at[at==0] <- 1; at } )
+  
   # Plot line graph of no. of items
-  plot(seq(iter), object$result$nItems, type="o", 
-       col = "darkorange2", cex = 0.5, 
+  plot(seq(iter), object$result$nItems, type="o",
+       col = "darkorange2", cex = 0.5,
        ylim = extendrange(object$results$nItems, f = 0.05),
-       xlab = "GA generation", ylab = "No. of items", 
+       xlab = "GA generation", ylab = "No. of items",
        main = "Measure length", yaxt = "n", xaxt = "n",
        panel.first = grid())
   axis(side = 2, at = sort(unique(object$result$nItems)))
-  axis(side = 1, 
-       at = {at <- pretty(seq(iter), n = 5, high.u.bias = 2); at[at==0] <- 1; at})  
+  axis(side = 1, at = { at <- pretty(seq(iter), n = 5, high.u.bias = 2)
+                        at[at==0] <- 1; at } )
+  
   # Plot line graph of mean R^2 (across scales) 
-  plot(seq(iter), object$result$meanR2, type = "o", 
-       col = "dodgerblue3", cex = 0.5, ylim = c(0,1), xaxt = "n", 
-       xlab = "GA generation", ylab = "Mean R^2 per scale", 
+  plot(seq(iter), object$result$meanR2, type = "o",
+       col = "dodgerblue3", cex = 0.5, ylim = c(0,1), xaxt = "n",
+       xlab = "GA generation", ylab = "Mean R^2 per scale",
        main = "Mean R^2", panel.first = grid())
-  axis(side = 1, 
-       at = {at <- pretty(seq(iter), n = 5, high.u.bias = 2); at[at==0] <- 1; at})  
+  axis(side = 1, at = { at <- pretty(seq(iter), n = 5, high.u.bias = 2)
+                        at[at==0] <- 1; at } )
   
-  # Plot history of best measures
+  # Plot history of best items
   l <- length(object$results$solution[1,])
-  par(mar = c(3,2,2,3)+0.1, mgp = c(2,0.5,0))
-  image(y = (0:iter), x = 1:l, z = t(object$results$solution), 
-        ylim = c(iter,0), xlim = c(1, l), 
-        col = c("grey95", "grey25"), xlab = "", ylab = "", 
+  par(mar = c(3,1,2,3)+0.1, mgp = c(2,0.5,0))
+  image(y = (0:iter), x = 1:l, z = t(object$results$solution),
+        ylim = c(iter,0), xlim = c(1, l),
+        col = c("grey95", "grey25"), xlab = "", ylab = "",
         xaxs = "r", xaxt = "n", yaxt = "n", bty = "n")
-  title(main = "Items included in measure", line = 1); box()
-  axis(side = 1, at = {at <- pretty(seq(l), n = 5, high.u.bias = 2); at[at==0] <- 1; at})  
-  atIter = {at <- pretty(seq(iter), n = 5, high.u.bias = 2); 
-            at[at==0] <- 1; at[at>iter] <- NA; at}
-  axis(4, at = atIter, labels = FALSE)
-  text(par("usr")[2]+1.5, atIter, srt = 270, labels = atIter, xpd = TRUE)  
-  text(par("usr")[2]+3.5, mean(par("usr")[3:4]), labels = "GA generation", 
-       srt = 270, xpd = TRUE)
-  
-  # mtext(side = 4, text = "GA generation", las = 0, crt = 45, line = 2)
-  # axis(1, at=seq(1, 10, by=1), labels = FALSE)
-  # text(seq(1, 10, by=1), par("usr")[3] - 0.2, labels = lablist, srt = 45, pos = 1, xpd = TRUE)
-  
-  # Plot details of current best solution  
+  title(main = "Items included in measure")
+  box()
+  axis(side = 1, at = { at <- pretty(seq(l), n = 5, high.u.bias = 2)
+                        at[at==0] <- 1; at } )
+  atIter <- { at <- unique(round(pretty(seq(iter), n = 5, high.u.bias = 2)))
+              at[at==0] <- 1; at[at<=iter] }
+  axis(side = 4, at = atIter, labels = atIter)
+  usr <- par("usr")
+  mtext(side = 4, text = "GA generation", at = mean(usr[3:4]),
+        line = 2, cex = 0.7)
+  # axis(4, at = atIter, labels = FALSE)
+  # text(usr[2]+max(strwidth(atIter))*1.5, atIter,
+  #      labels = atIter, srt = 270, xpd = TRUE)
+  # text(usr[2]+max(strwidth(atIter))*2.5, mean(usr[3:4]),
+  #      labels = "GA generation", srt = 270, xpd = TRUE)
+
+  # Plot details of current best solution
   nScales <- object$data$nScales
   par(mgp = c(2,0.7,0), mar = c(3,4,2,1)+0.1)
-  plot(0, 0, type = "n", xlim = c(0, 1), 
-       ylim = c(nScales, 1), yaxs = "r", yaxt = "n", # xaxs="i", 
-       xlab = "Variance explained (R^2)", ylab = "", 
+  plot(0, 0, type = "n", xlim = c(0, 1),
+       ylim = c(nScales, 1), yaxs = "r", yaxt = "n", # xaxs="i",
+       xlab = "Variance explained (R^2)", ylab = "",
        main = "Best solution", xaxt = "n")
-  axis(side = 1, at = pretty(0:1, n = 5, high.u.bias = 2))  
+  axis(side = 1, at = pretty(0:1, n = 5, high.u.bias = 2))
   points(x = (1-object$best$fit), y = 1:nScales, type = "p", pch = 15)
   abline(v = (1:4)/5, lty = 2, col = "darkgray", lwd = 0.5)
   labels <- colnames(object$data$scales)
   if(is.null(labels)) labels <- 1:nScales
-  mtext(labels, 2, line = 0.5, at = 1:nScales, cex = 0.7, las = 2)
-  # If function is called from completed object (i.e., not as part 
-  # of monitoring), display R^2 for validation half if it exists.
-#   is.final <- !(is.null(object$GA))
-#   if(is.final & !is.null(gaa$measure$key) & length(gaa$data$crossvalSubjects)>0)
-#     { cc <- convCorr.GAabbreviate(gaa, "validation")
-#        lines(cc^2, y=1:nScales, col="black", type="p", cex=0.7, lwd=2)
-#   }
-  
-} 
+  mtext(labels, side = 2, line = 0.5, at = 1:nScales, cex = 0.7, las = 2)
+
+  invisible(object)
+}
+
+is.missing <- function(x) 
+{
+  x <- as.matrix(x)
+  (is.na(x) | !is.finite(x))
+}
 
 # Helper function; imputes all NAs with the column-wise mean.
 impute <- function(x) 
