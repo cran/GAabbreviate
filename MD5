@@ -1,7 +1,7 @@
-fc229bed618a77c52117ac24b6b09813 *DESCRIPTION
-ceba91eb7e85ff291e76f00efecc194a *NAMESPACE
-53ba085525e76fb8b012f8c61650e7c8 *R/GAabbreviate.R
+007fa73eef7b0d4bdaaf8f9ce9280e04 *DESCRIPTION
+2290a0ccfc0cc6f212e9f382ddac4421 *NAMESPACE
+9e6a79c062fa2aae8f1dee4abcb00039 *R/GAabbreviate.R
 d9a36b3805f8addf2229bb0eedac89d7 *inst/CITATION
-1d84efa7a659f5a6b932feddf29e7109 *inst/NEWS
-d8660cc192a53fa81d6071d504bfb92b *man/GAabbreviate-internal.Rd
-efb8136ad132771fbf262d7b24caa6a7 *man/GAabbreviate.Rd
+601964f2aa042770a5fbe70080b3f3c5 *inst/NEWS
+6b95086aaf84f064fe4c742fb6170755 *man/GAabbreviate-internal.Rd
+b0157d3818315238d5ee1c025a6abd84 *man/GAabbreviate.Rd

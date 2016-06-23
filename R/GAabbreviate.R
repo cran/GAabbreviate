@@ -3,11 +3,11 @@
 # Abbreviating items (from questionnaire or other) measures 
 # using genetic algorithms (GAs)
 #
-# version 1.1 Feb 2016
+# version 1.3 Apr 2016 for GA >= 3.0
 #
 # Luca Scrucca
 # University of Perugia, Italy
-# luca@stat.unipg.it
+# luca.scrucca@unipg.it
 #
 # ---------------------------------------------------------------------------
 #
@@ -21,10 +21,11 @@
 GAabbreviate <- function(items = NULL, scales = NULL, 
                          itemCost = 0.05, maxItems = 5, 
                          maxiter = 100, popSize = 50, ...,
-                         plot = FALSE, verbose = TRUE, 
+                         plot = FALSE, verbose = interactive(), 
                          crossVal = TRUE, impute = FALSE, 
                          pairwise = FALSE, minR = 0, 
-                         sWeights = NULL, nSample = NULL) 
+                         sWeights = NULL, nSample = NULL, 
+                         seed = NULL) 
 {
   
   if(is.null(items) & is.null(scales)) 
@@ -45,16 +46,19 @@ GAabbreviate <- function(items = NULL, scales = NULL,
   if(is.null(sWeights)) sWeights <- rep(1, nScales)
   if(length(sWeights) != nScales) 
     stop("Length of scale weights vector must match the number of scales!")
+
+  # set seed for reproducibility 
+  if(!is.null(seed)) set.seed(seed)
   
   # Can sample only a subset of observations
   if(!is.null(nSample) && is.numeric(nSample) && nSample > 0) 
     { if(verbose)
          message(paste("Using", nSample, "of", nSubjects, 
                        "subjects to generate measure..."))
-         samp <- sample(nSubjects, nSample, replace = FALSE)  
-         nSubjects <- nSample
-         items <- items[samp,,drop=FALSE]
-         scales <- scales[samp,,drop=FALSE]
+      samp <- sample(nSubjects, nSample, replace = FALSE)  
+      nSubjects <- nSample
+      items <- items[samp,,drop=FALSE]
+      scales <- scales[samp,,drop=FALSE]
   }
     
   # If cross-validation is TRUE, randomly split sample in two halves
@@ -113,7 +117,7 @@ GAabbreviate <- function(items = NULL, scales = NULL,
   assign("TMPGAabbreviateObject", obj, envir = env)
   
   # Run GA and store in gaa
-  if(verbose & interactive())
+  if(verbose)
     cat("Starting GA run...\n")
 
   obj$GA <- ga(type = "binary", 
@@ -122,10 +126,11 @@ GAabbreviate <- function(items = NULL, scales = NULL,
                popSize = obj$settings$popSize,
                maxiter = obj$settings$maxiter, 
                keepBest = TRUE,
+               postFitness = function(...) 
+                             updateObject.GAabbreviate(..., plot = plot),
                monitor = function(...) 
-                         monitor.GAabbreviate(..., 
-                                              verbose = verbose, 
-                                              plot = plot),
+                         monitor.GAabbreviate(..., verbose = verbose),
+               seed = seed,
                ...)
 
   # get intermediate results saved at each iteration
@@ -190,20 +195,11 @@ fitness.GAabbreviate <- function(x)
   return(-totalCost)
 }
 
-# Monitoring function
-
-monitor.GAabbreviate <- function(object, verbose = TRUE, plot = FALSE, 
-                                 digits = getOption("digits"), ...)
+# Post-fitness function
+updateObject.GAabbreviate <- function(object, plot = FALSE, ...)
 {
   fitness <- -1*na.exclude(object@fitness)
   iter <- object@iter 
-  
-  if(verbose & interactive())
-    { cat(paste("Iter =", iter, 
-                " | Mean =", format(mean(fitness), digits = digits), 
-                " | Best =", format(min(fitness), digits = digits),  "\n")) 
-  }
-  
   # get results at current iteration 
   # env <- asNamespace("GAabbreviate")
   env <- globalenv()
@@ -225,7 +221,24 @@ monitor.GAabbreviate <- function(object, verbose = TRUE, plot = FALSE,
   # record results at current iteration 
   assign("TMPGAabbreviateObject", gaa, envir = env)
   # 
-  invisible(gaa)
+  invisible(object)
+}
+
+# Monitoring function
+
+monitor.GAabbreviate <- function(object, verbose = TRUE, 
+                                 digits = getOption("digits"), ...)
+{
+  fitness <- -1*na.exclude(object@fitness)
+  iter <- object@iter 
+  
+  if(verbose)
+    { cat(paste("Iter =", iter, 
+                " | Mean =", format(mean(fitness), digits = digits), 
+                " | Best =", format(min(fitness), digits = digits),  "\n")) 
+  }
+
+  invisible(object)
 }
 
 # Creates scoring key, generates measure statistics, etc.
@@ -361,8 +374,11 @@ plot.GAabbreviate <- function(x, ...)
 {
   object <- x  # Argh.  Really want to use 'object' anyway
   
+  dev.hold()
   oldpar <- par(no.readonly = TRUE)
-  on.exit(par(oldpar))
+  on.exit({ dev.flush()
+            par(oldpar) })
+  
   layout(cbind(c(1,2,3), c(5,5,5), c(4,4,4)))
   # layout.show(5)
   par(mgp = c(2,0.7,0), plt = c(0.1,0.85,0.2,0.85), 
@@ -396,7 +412,6 @@ plot.GAabbreviate <- function(x, ...)
        main = "Mean R^2", panel.first = grid())
   axis(side = 1, at = { at <- pretty(seq(iter), n = 5, high.u.bias = 2)
                         at[at==0] <- 1; at } )
-  
   # Plot history of best items
   l <- length(object$results$solution[1,])
   par(mar = c(3,1,2,3)+0.1, mgp = c(2,0.5,0))

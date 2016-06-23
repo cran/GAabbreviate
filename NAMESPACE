@@ -3,10 +3,13 @@ exportPattern("^[[:alpha:]]+")
 # Import all packages listed as Imports or Depends
 import(GA, psych)
 
-importFrom("grDevices", "extendrange")
+importFrom("grDevices", "extendrange", "dev.flush", "dev.hold")
+
 importFrom("graphics", "abline", "axis", "box", "grid", "image",
            "layout", "mtext", "par", "points", "text", "title")
+           
 importFrom("stats", "cor", "na.exclude")
+
 importFrom("utils", "capture.output", "str")
  
 # Register S3 methods

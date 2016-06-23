@@ -9,6 +9,7 @@
 \alias{makeKey.GAabbreviate}
 \alias{measure.GAabbreviate}
 \alias{monitor.GAabbreviate}
+\alias{updateObject.GAabbreviate}
 \alias{plot.GAabbreviate}
 \alias{print.GAabbreviate}
 \alias{summary.GAabbreviate}

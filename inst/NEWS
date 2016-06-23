@@ -1,3 +1,10 @@
+Version 1.3 (2016-06-22)
+    o Modified to work with GA version >= 3.0.
+    o Default verbose argument is set to interactive().
+    o Included a seed argument to make results fully reproducible.
+    o Corrected formula in help documentation for GAabbreviate().
+    o Changed description of package.
+    
 Version 1.2 (2016-03-14)
     o Fix a bug with parallelisation using 'snow' (the only option available on
       Windows).
